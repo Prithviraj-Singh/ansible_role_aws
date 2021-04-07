@@ -1,0 +1,33 @@
+- name: Create a sandbox instance
+  hosts: localhost
+  gather_facts: False
+  vars_files:
+     - var.yml
+  vars:
+     - id: '["i-1234567890abcdef3", "i-1234567890abcdef4", "i-1234567890abcdef5"]'
+  tasks:
+    - name: Launch instance
+      amazon.aws.ec2:
+         key_name: "{{ keypair }}"
+         group: "{{ security_group }}"
+         instance_type: "{{ instance_type }}"
+         id: "{{ item }}"
+         image: "{{ image }}"
+         wait: true
+         region: "{{ region }}"
+         vpc_subnet_id: subnet-a2363fca 
+         assign_public_ip: yes
+      register: ec2
+      loop: "{{ id }}"
+
+    - debug:
+         var: ec2.results[0].instances[0:-1].public_ip
+
+    - name: updating inventory
+      template:
+         src: template.j2
+         dest: /root/ws_aws_kube/inventory
+
+- hosts: ec2
+  tasks:
+     - command: date
